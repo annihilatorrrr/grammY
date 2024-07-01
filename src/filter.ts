@@ -228,6 +228,8 @@ const ENTITY_KEYS = {
     underline: {},
     strikethrough: {},
     spoiler: {},
+    blockquote: {},
+    expandable_blockquote: {},
     code: {},
     pre: {},
     text_link: {},
@@ -279,11 +281,13 @@ const COMMON_MESSAGE_KEYS = {
     poll: {},
     venue: {},
     location: {},
+    paid_media: {},
 
     entities: ENTITY_KEYS,
     caption_entities: ENTITY_KEYS,
     caption: {},
 
+    effect_id: {},
     has_media_spoiler: {},
 
     new_chat_title: {},
@@ -635,7 +639,8 @@ interface Shortcuts<U extends Update> {
         : [U["message_reaction"]] extends [object] ? number
         : [U["message_reaction_count"]] extends [object] ? number
         : undefined;
-    chatId: [Shortcuts<U>["chat"]] extends [object] ? number
+    chatId: [U["callback_query"]] extends [object] ? number | undefined
+        : [Shortcuts<U>["chat"]] extends [object] ? number
         : [U["business_connection"]] extends [object] ? number
         : undefined;
     // inlineMessageId: disregarded here because always optional on both types

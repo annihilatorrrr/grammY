@@ -17,6 +17,7 @@ import {
     type InputMediaDocument,
     type InputMediaPhoto,
     type InputMediaVideo,
+    type InputPaidMedia,
     type InputPollOption,
     type LabeledPrice,
     type Message,
@@ -81,9 +82,9 @@ interface StaticHas {
         >,
     ): <C extends Context>(ctx: C) => ctx is CommandContext<C>;
     /**
-     * Generates a predicate function that can test context
-     * objects for containing a message reaction update. This uses the same
-     * logic as `bot.reaction`.
+     * Generates a predicate function that can test context objects for
+     * containing a message reaction update. This uses the same logic as
+     * `bot.reaction`.
      *
      * @param reaction The reaction to test against
      */
@@ -141,6 +142,28 @@ interface StaticHas {
     chosenInlineResult(
         trigger: MaybeArray<string | RegExp>,
     ): <C extends Context>(ctx: C) => ctx is ChosenInlineResultContext<C>;
+    /**
+     * Generates a predicate function that can test context objects for
+     * containing the given pre-checkout query, or for the pre-checkout query
+     * payload to match the given regular expression. This uses the same logic
+     * as `bot.preCheckoutQuery`.
+     *
+     * @param trigger The string or regex to match
+     */
+    preCheckoutQuery(
+        trigger: MaybeArray<string | RegExp>,
+    ): <C extends Context>(ctx: C) => ctx is PreCheckoutQueryContext<C>;
+    /**
+     * Generates a predicate function that can test context objects for
+     * containing the given shipping query, or for the shipping query to match
+     * the given regular expression. This uses the same logic as
+     * `bot.shippingQuery`.
+     *
+     * @param trigger The string or regex to match
+     */
+    shippingQuery(
+        trigger: MaybeArray<string | RegExp>,
+    ): <C extends Context>(ctx: C) => ctx is ShippingQueryContext<C>;
 }
 const checker: StaticHas = {
     filterQuery<Q extends FilterQuery>(filter: Q | Q[]) {
@@ -292,6 +315,20 @@ const checker: StaticHas = {
         ): ctx is ChosenInlineResultContext<C> =>
             hasChosenInlineResult(ctx) &&
             match(ctx, ctx.chosenInlineResult.result_id, trg);
+    },
+    preCheckoutQuery(trigger) {
+        const hasPreCheckoutQuery = checker.filterQuery("pre_checkout_query");
+        const trg = triggerFn(trigger);
+        return <C extends Context>(ctx: C): ctx is PreCheckoutQueryContext<C> =>
+            hasPreCheckoutQuery(ctx) &&
+            match(ctx, ctx.preCheckoutQuery.invoice_payload, trg);
+    },
+    shippingQuery(trigger) {
+        const hasShippingQuery = checker.filterQuery("shipping_query");
+        const trg = triggerFn(trigger);
+        return <C extends Context>(ctx: C): ctx is ShippingQueryContext<C> =>
+            hasShippingQuery(ctx) &&
+            match(ctx, ctx.shippingQuery.invoice_payload, trg);
     },
 };
 
@@ -562,11 +599,12 @@ export class Context implements RenamedUpdate {
             this.deletedBusinessMessages?.business_connection_id;
     }
     /**
-     * Get entities and their text. Extracts the text from `ctx.msg.text` or `ctx.msg.caption`.
-     * Returns an empty array if one of `ctx.msg`, `ctx.msg.text`
-     * or `ctx.msg.entities` is undefined.
+     * Get entities and their text. Extracts the text from `ctx.msg.text` or
+     * `ctx.msg.caption`. Returns an empty array if one of `ctx.msg`,
+     * `ctx.msg.text` or `ctx.msg.entities` is undefined.
      *
-     * You can filter specific entity types by passing the `types` parameter. Example:
+     * You can filter specific entity types by passing the `types` parameter.
+     * Example:
      *
      * ```ts
      * ctx.entities() // Returns all entity types
@@ -842,11 +880,11 @@ export class Context implements RenamedUpdate {
     ): this is InlineQueryContextCore {
         return Context.has.inlineQuery(trigger)(this);
     }
-
     /**
-     * Returns `true` if this context object contains the chosen inline result, or
-     * if the contained chosen inline result matches the given regular expression. It
-     * returns `false` otherwise. This uses the same logic as `bot.chosenInlineResult`.
+     * Returns `true` if this context object contains the chosen inline result,
+     * or if the contained chosen inline result matches the given regular
+     * expression. It returns `false` otherwise. This uses the same logic as
+     * `bot.chosenInlineResult`.
      *
      * @param trigger The string or regex to match
      */
@@ -854,6 +892,32 @@ export class Context implements RenamedUpdate {
         trigger: MaybeArray<string | RegExp>,
     ): this is ChosenInlineResultContextCore {
         return Context.has.chosenInlineResult(trigger)(this);
+    }
+    /**
+     * Returns `true` if this context object contains the given pre-checkout
+     * query, or if the contained pre-checkout query matches the given regular
+     * expression. It returns `false` otherwise. This uses the same logic as
+     * `bot.preCheckoutQuery`.
+     *
+     * @param trigger The string or regex to match
+     */
+    hasPreCheckoutQuery(
+        trigger: MaybeArray<string | RegExp>,
+    ): this is PreCheckoutQueryContextCore {
+        return Context.has.preCheckoutQuery(trigger)(this);
+    }
+    /**
+     * Returns `true` if this context object contains the given shipping query,
+     * or if the contained shipping query matches the given regular expression.
+     * It returns `false` otherwise. This uses the same logic as
+     * `bot.shippingQuery`.
+     *
+     * @param trigger The string or regex to match
+     */
+    hasShippingQuery(
+        trigger: MaybeArray<string | RegExp>,
+    ): this is ShippingQueryContextCore {
+        return Context.has.shippingQuery(trigger)(this);
     }
 
     // API
@@ -935,7 +999,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.copyMessage`. Use this method to copy messages of any kind. Service messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
+     * Context-aware alias for `api.copyMessage`. Use this method to copy messages of any kind. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param other Optional remaining parameters, confer the official reference below
@@ -958,7 +1022,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.copyMessages`.Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an array of MessageId of the sent messages is returned.
+     * Context-aware alias for `api.copyMessages`. Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an array of MessageId of the sent messages is returned.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param message_ids A list of 1-100 identifiers of messages in the current chat to copy. The identifiers must be specified in a strictly increasing order.
@@ -1259,6 +1323,31 @@ export class Context implements RenamedUpdate {
                 other,
                 signal,
             );
+    }
+
+    /**
+     * Context-aware alias for `api.sendPaidMedia`. Use this method to send paid media to channel chats. On success, the sent Message is returned.
+     *
+     * @param star_count The number of Telegram Stars that must be paid to buy access to the media
+     * @param media An array describing the media to be sent; up to 10 items
+     * @param other Optional remaining parameters, confer the official reference below
+     * @param signal Optional `AbortSignal` to cancel the request
+     *
+     * **Official reference:** https://core.telegram.org/bots/api#sendpaidmedia
+     */
+    sendPaidMedia(
+        star_count: number,
+        media: InputPaidMedia[],
+        other?: Other<"sendPaidMedia", "chat_id" | "star_count" | "media">,
+        signal?: AbortSignal,
+    ) {
+        return this.api.sendPaidMedia(
+            orThrow(this.chatId, "sendPaidMedia"),
+            star_count,
+            media,
+            other,
+            signal,
+        );
     }
 
     /**
@@ -1760,14 +1849,20 @@ export class Context implements RenamedUpdate {
      * Context-aware alias for `api.setChatPermissions`. Use this method to set default chat permissions for all members. The bot must be an administrator in the group or a supergroup for this to work and must have the can_restrict_members administrator rights. Returns True on success.
      *
      * @param permissions New default chat permissions
+     * @param other Optional remaining parameters, confer the official reference below
      * @param signal Optional `AbortSignal` to cancel the request
      *
      * **Official reference:** https://core.telegram.org/bots/api#setchatpermissions
      */
-    setChatPermissions(permissions: ChatPermissions, signal?: AbortSignal) {
+    setChatPermissions(
+        permissions: ChatPermissions,
+        other?: Other<"setChatPermissions", "chat_id" | "permissions">,
+        signal?: AbortSignal,
+    ) {
         return this.api.setChatPermissions(
             orThrow(this.chatId, "setChatPermissions"),
             permissions,
+            other,
             signal,
         );
     }
@@ -2377,7 +2472,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.editMessageText`. Use this method to edit text and game messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Context-aware alias for `api.editMessageText`. Use this method to edit text and game messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param text New text of the message, 1-4096 characters after entities parsing
      * @param other Optional remaining parameters, confer the official reference below
@@ -2410,7 +2505,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.editMessageCaption`. Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Context-aware alias for `api.editMessageCaption`. Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param other Optional remaining parameters, confer the official reference below
      * @param signal Optional `AbortSignal` to cancel the request
@@ -2440,7 +2535,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.editMessageMedia`. Use this method to edit animation, audio, document, photo, or video messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Context-aware alias for `api.editMessageMedia`. Use this method to edit animation, audio, document, photo, or video messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param media An object for a new media content of the message
      * @param other Optional remaining parameters, confer the official reference below
@@ -2473,7 +2568,7 @@ export class Context implements RenamedUpdate {
     }
 
     /**
-     * Context-aware alias for `api.editMessageReplyMarkup`. Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Context-aware alias for `api.editMessageReplyMarkup`. Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param other Optional remaining parameters, confer the official reference below
      * @param signal Optional `AbortSignal` to cancel the request
@@ -2641,7 +2736,6 @@ export class Context implements RenamedUpdate {
      * @param title Product name, 1-32 characters
      * @param description Product description, 1-255 characters
      * @param payload Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use for your internal processes.
-     * @param provider_token Payment provider token, obtained via @BotFather
      * @param currency Three-letter ISO 4217 currency code, see more on currencies
      * @param prices Price breakdown, a list of components (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.)
      * @param other Optional remaining parameters, confer the official reference below
@@ -2653,7 +2747,6 @@ export class Context implements RenamedUpdate {
         title: string,
         description: string,
         payload: string,
-        provider_token: string,
         currency: string,
         prices: readonly LabeledPrice[],
         other?: Other<
@@ -2662,7 +2755,6 @@ export class Context implements RenamedUpdate {
             | "title"
             | "description"
             | "payload"
-            | "provider_token"
             | "currency"
             | "prices"
         >,
@@ -2673,7 +2765,6 @@ export class Context implements RenamedUpdate {
             title,
             description,
             payload,
-            provider_token,
             currency,
             prices,
             other,
@@ -2724,6 +2815,22 @@ export class Context implements RenamedUpdate {
             orThrow(this.preCheckoutQuery, "answerPreCheckoutQuery").id,
             ok,
             typeof other === "string" ? { error_message: other } : other,
+            signal,
+        );
+    }
+
+    /**
+     * Context-aware alias for `api.refundStarPayment`. Refunds a successful payment in Telegram Stars.
+     *
+     * @param signal Optional `AbortSignal` to cancel the request
+     *
+     * **Official reference:** https://core.telegram.org/bots/api#refundstarpayment
+     */
+    refundStarPayment(signal?: AbortSignal) {
+        return this.api.refundStarPayment(
+            orThrow(this.from, "refundStarPayment").id,
+            orThrow(this.msg?.successful_payment, "refundStarPayment")
+                .telegram_payment_charge_id,
             signal,
         );
     }
@@ -2841,7 +2948,7 @@ type GameQueryContextCore = FilterCore<"callback_query:game_short_name">;
  * in separate files and still have the correct types.
  */
 export type GameQueryContext<C extends Context> = Filter<
-    C,
+    NarrowMatch<C, string | RegExpMatchArray>,
     "callback_query:game_short_name"
 >;
 
@@ -2856,7 +2963,10 @@ type InlineQueryContextCore = FilterCore<"inline_query">;
  * inferring the correct type automatically. That way, handlers can be defined
  * in separate files and still have the correct types.
  */
-export type InlineQueryContext<C extends Context> = Filter<C, "inline_query">;
+export type InlineQueryContext<C extends Context> = Filter<
+    NarrowMatch<C, string | RegExpMatchArray>,
+    "inline_query"
+>;
 
 type ReactionContextCore = FilterCore<"message_reaction">;
 /**
@@ -2883,13 +2993,46 @@ type ChosenInlineResultContextCore = FilterCore<"chosen_inline_result">;
  * in separate files and still have the correct types.
  */
 export type ChosenInlineResultContext<C extends Context> = Filter<
-    C,
+    NarrowMatch<C, string | RegExpMatchArray>,
     "chosen_inline_result"
+>;
+
+type PreCheckoutQueryContextCore = FilterCore<"pre_checkout_query">;
+/**
+ * Type of the context object that is available inside the handlers for
+ * `bot.preCheckoutQuery`.
+ *
+ * This helper type can be used to narrow down context objects the same way how
+ * annotate `bot.preCheckoutQuery` does it. This allows you to context objects in
+ * middleware that is not directly passed to `bot.preCheckoutQuery`, hence not
+ * inferring the correct type automatically. That way, handlers can be defined
+ * in separate files and still have the correct types.
+ */
+export type PreCheckoutQueryContext<C extends Context> = Filter<
+    NarrowMatch<C, string | RegExpMatchArray>,
+    "pre_checkout_query"
+>;
+
+type ShippingQueryContextCore = FilterCore<"shipping_query">;
+/**
+ * Type of the context object that is available inside the handlers for
+ * `bot.shippingQuery`.
+ *
+ * This helper type can be used to narrow down context objects the same way how
+ * annotate `bot.shippingQuery` does it. This allows you to context objects in
+ * middleware that is not directly passed to `bot.shippingQuery`, hence not
+ * inferring the correct type automatically. That way, handlers can be defined
+ * in separate files and still have the correct types.
+ */
+export type ShippingQueryContext<C extends Context> = Filter<
+    NarrowMatch<C, string | RegExpMatchArray>,
+    "shipping_query"
 >;
 
 type ChatTypeContextCore<T extends Chat["type"]> =
     & Record<"update", ChatTypeUpdate<T>> // ctx.update
     & ChatType<T> // ctx.chat
+    & Record<"chatId", number> // ctx.chatId
     & ChatFrom<T> // ctx.from
     & ChatTypeRecord<"msg", T> // ctx.msg
     & AliasProps<ChatTypeUpdate<T>>; // ctx.message etc
@@ -2904,8 +3047,7 @@ type ChatTypeContextCore<T extends Chat["type"]> =
  * files and still have the correct types.
  */
 export type ChatTypeContext<C extends Context, T extends Chat["type"]> =
-    & C
-    & ChatTypeContextCore<T>;
+    T extends unknown ? C & ChatTypeContextCore<T> : never;
 type ChatTypeUpdate<T extends Chat["type"]> =
     & ChatTypeRecord<
         | "message"

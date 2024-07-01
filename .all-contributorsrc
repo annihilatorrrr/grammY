@@ -698,7 +698,8 @@
         "review",
         "infra",
         "ideas",
-        "mentoring"
+        "mentoring",
+        "plugin"
       ]
     },
     {
@@ -1041,7 +1042,8 @@
       "profile": "https://github.com/AbbassAlmusawi",
       "contributions": [
         "doc",
-        "bug"
+        "bug",
+        "code"
       ]
     },
     {
@@ -1200,7 +1202,8 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/32096016?v=4",
       "profile": "http://linkedin.com/in/thecoorum",
       "contributions": [
-        "bug"
+        "bug",
+        "code"
       ]
     },
     {
@@ -1292,6 +1295,78 @@
       "name": "Ash",
       "avatar_url": "https://avatars.githubusercontent.com/u/4239224?v=4",
       "profile": "http://zi.vc/",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "winstxnhdw",
+      "name": "Winston H.",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56998716?v=4",
+      "profile": "https://github.com/winstxnhdw",
+      "contributions": [
+        "ideas",
+        "code",
+        "review",
+        "test"
+      ]
+    },
+    {
+      "login": "carafelix",
+      "name": "Hero Protagonist",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48109042?v=4",
+      "profile": "https://github.com/carafelix",
+      "contributions": [
+        "code",
+        "bug",
+        "ideas",
+        "plugin"
+      ]
+    },
+    {
+      "login": "MobinAskari",
+      "name": "Mobin Askari",
+      "avatar_url": "https://avatars.githubusercontent.com/u/132358316?v=4",
+      "profile": "https://github.com/MobinAskari",
+      "contributions": [
+        "plugin"
+      ]
+    },
+    {
+      "login": "ubertao",
+      "name": "Ubertao",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4099333?v=4",
+      "profile": "https://github.com/ubertao",
+      "contributions": [
+        "ideas",
+        "code"
+      ]
+    },
+    {
+      "login": "SunsetTechuila",
+      "name": "Grigory",
+      "avatar_url": "https://avatars.githubusercontent.com/u/115353812?v=4",
+      "profile": "https://github.com/SunsetTechuila",
+      "contributions": [
+        "ideas",
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "aleveha",
+      "name": "aleveha",
+      "avatar_url": "https://avatars.githubusercontent.com/u/63300936?v=4",
+      "profile": "https://github.com/aleveha",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "barinbritva",
+      "name": "barinbritva",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4758362?v=4",
+      "profile": "https://github.com/barinbritva",
       "contributions": [
         "review"
       ]

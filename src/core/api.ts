@@ -9,6 +9,7 @@ import {
     type InputMediaDocument,
     type InputMediaPhoto,
     type InputMediaVideo,
+    type InputPaidMedia,
     type InputPollOption,
     type InputSticker,
     type LabeledPrice,
@@ -91,20 +92,29 @@ export class Api<R extends RawApi = RawApi> {
         readonly installedTransformers: () => Transformer<R>[];
     };
 
+    /**
+     * Constructs a new instance of `Api`. It is independent from all other
+     * instances of this class. For example, this lets you install a custom set
+     * if transformers.
+     *
+     * @param token Bot API token obtained from [@BotFather](https://t.me/BotFather)
+     * @param options Optional API client options for the underlying client instance
+     * @param webhookReplyEnvelope Optional envelope to handle webhook replies
+     */
     constructor(
-        token: string,
-        config?: ApiClientOptions,
+        public readonly token: string,
+        public readonly options?: ApiClientOptions,
         webhookReplyEnvelope?: WebhookReplyEnvelope,
     ) {
         const { raw, use, installedTransformers } = createRawApi<R>(
             token,
-            config,
+            options,
             webhookReplyEnvelope,
         );
         this.raw = raw;
         this.config = {
             use,
-            installedTransformers: () => [...installedTransformers],
+            installedTransformers: () => installedTransformers.slice(),
         };
     }
 
@@ -284,7 +294,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to copy messages of any kind. Service messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
+     * Use this method to copy messages of any kind. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessage, but the copied message doesn't have a link to the original message. Returns the MessageId of the sent message on success.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param from_chat_id Unique identifier for the chat where the original message was sent (or channel username in the format @channelusername)
@@ -312,7 +322,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an array of MessageId of the sent messages is returned.
+     * Use this method to copy messages of any kind. If some of the specified messages can't be found or copied, they are skipped. Service messages, paid media messages, giveaway messages, giveaway winners messages, and invoice messages can't be copied. A quiz poll can be copied only if the value of the field correct_option_id is known to the bot. The method is analogous to the method forwardMessages, but the copied messages don't have a link to the original message. Album grouping is kept for copied messages. On success, an array of MessageId of the sent messages is returned.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param from_chat_id Unique identifier for the chat where the original messages were sent (or channel username in the format @channelusername)
@@ -640,6 +650,30 @@ export class Api<R extends RawApi = RawApi> {
     ) {
         return this.raw.stopMessageLiveLocation(
             { inline_message_id, ...other },
+            signal,
+        );
+    }
+
+    /**
+     * Use this method to send paid media to channel chats. On success, the sent Message is returned.
+     *
+     * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
+     * @param star_count The number of Telegram Stars that must be paid to buy access to the media
+     * @param media An array describing the media to be sent; up to 10 items
+     * @param other Optional remaining parameters, confer the official reference below
+     * @param signal Optional `AbortSignal` to cancel the request
+     *
+     * **Official reference:** https://core.telegram.org/bots/api#sendpaidmedia
+     */
+    sendPaidMedia(
+        chat_id: number | string,
+        star_count: number,
+        media: InputPaidMedia[],
+        other?: Other<R, "sendPaidMedia", "chat_id" | "star_count" | "media">,
+        signal?: AbortSignal,
+    ) {
+        return this.raw.sendPaidMedia(
+            { chat_id, star_count, media, ...other },
             signal,
         );
     }
@@ -1034,6 +1068,7 @@ export class Api<R extends RawApi = RawApi> {
      *
      * @param chat_id Unique identifier for the target chat or username of the target supergroup (in the format @supergroupusername)
      * @param permissions New default chat permissions
+     * @param other Optional remaining parameters, confer the official reference below
      * @param signal Optional `AbortSignal` to cancel the request
      *
      * **Official reference:** https://core.telegram.org/bots/api#setchatpermissions
@@ -1041,9 +1076,13 @@ export class Api<R extends RawApi = RawApi> {
     setChatPermissions(
         chat_id: number | string,
         permissions: ChatPermissions,
+        other?: Other<R, "setChatPermissions", "chat_id" | "permissions">,
         signal?: AbortSignal,
     ) {
-        return this.raw.setChatPermissions({ chat_id, permissions }, signal);
+        return this.raw.setChatPermissions(
+            { chat_id, permissions, ...other },
+            signal,
+        );
     }
 
     /**
@@ -1799,7 +1838,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit text and game messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit text and game messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param message_id Identifier of the message to edit
@@ -1827,7 +1866,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit text and game inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit text and game inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param inline_message_id Identifier of the inline message
      * @param other Optional remaining parameters, confer the official reference below
@@ -1852,7 +1891,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit captions of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param message_id Identifier of the message to edit
@@ -1878,7 +1917,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit captions of inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit captions of inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param inline_message_id Identifier of the inline message
      * @param other Optional remaining parameters, confer the official reference below
@@ -1902,7 +1941,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit animation, audio, document, photo, or video messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit animation, audio, document, photo, or video messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param message_id Identifier of the message to edit
@@ -1930,7 +1969,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit animation, audio, document, photo, or video messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit animation, audio, document, photo, or video inline messages. If a message is part of a message album, then it can be edited only to an audio for audio albums, only to a document for document albums and to a photo or a video otherwise. When an inline message is edited, a new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param inline_message_id Identifier of the inline message
      * @param media An object for a new media content of the message
@@ -1956,7 +1995,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit only the reply markup of messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param chat_id Unique identifier for the target chat or username of the target channel (in the format @channelusername)
      * @param message_id Identifier of the message to edit
@@ -1982,7 +2021,7 @@ export class Api<R extends RawApi = RawApi> {
     }
 
     /**
-     * Use this method to edit only the reply markup of inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned.
+     * Use this method to edit only the reply markup of inline messages. On success, if the edited message is not an inline message, the edited Message is returned, otherwise True is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within 48 hours from the time they were sent.
      *
      * @param inline_message_id Identifier of the inline message
      * @param other Optional remaining parameters, confer the official reference below
@@ -2412,7 +2451,6 @@ export class Api<R extends RawApi = RawApi> {
      * @param title Product name, 1-32 characters
      * @param description Product description, 1-255 characters
      * @param payload Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use for your internal processes.
-     * @param provider_token Payment provider token, obtained via @BotFather
      * @param currency Three-letter ISO 4217 currency code, see more on currencies
      * @param prices Price breakdown, a list of components (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.)
      * @param other Optional remaining parameters, confer the official reference below
@@ -2425,7 +2463,6 @@ export class Api<R extends RawApi = RawApi> {
         title: string,
         description: string,
         payload: string,
-        provider_token: string,
         currency: string,
         prices: readonly LabeledPrice[],
         other?: Other<
@@ -2435,7 +2472,6 @@ export class Api<R extends RawApi = RawApi> {
             | "title"
             | "description"
             | "payload"
-            | "provider_token"
             | "currency"
             | "prices"
         >,
@@ -2446,7 +2482,6 @@ export class Api<R extends RawApi = RawApi> {
             title,
             description,
             payload,
-            provider_token,
             currency,
             prices,
             ...other,
@@ -2541,6 +2576,41 @@ export class Api<R extends RawApi = RawApi> {
     ) {
         return this.raw.answerPreCheckoutQuery(
             { pre_checkout_query_id, ok, ...other },
+            signal,
+        );
+    }
+
+    /**
+     * Returns the bot's Telegram Star transactions in chronological order. On success, returns a StarTransactions object.
+     *
+     * @param other Optional remaining parameters, confer the official reference below
+     * @param signal Optional `AbortSignal` to cancel the request
+     *
+     * **Official reference:** https://core.telegram.org/bots/api#getstartransactions
+     */
+    getStarTransactions(
+        other?: Other<R, "getStarTransactions">,
+        signal?: AbortSignal,
+    ) {
+        return this.raw.getStarTransactions({ ...other }, signal);
+    }
+
+    /**
+     * Refunds a successful payment in Telegram Stars.
+     *
+     * @param user_id Identifier of the user whose payment will be refunded
+     * @param telegram_payment_charge_id Telegram payment identifier
+     * @param signal Optional `AbortSignal` to cancel the request
+     *
+     * **Official reference:** https://core.telegram.org/bots/api#refundstarpayment
+     */
+    refundStarPayment(
+        user_id: number,
+        telegram_payment_charge_id: string,
+        signal?: AbortSignal,
+    ) {
+        return this.raw.refundStarPayment(
+            { user_id, telegram_payment_charge_id },
             signal,
         );
     }
